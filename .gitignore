@@ -1,0 +1,6 @@
+build/
+out/
+dist/
+*.part
+__pycache__/
+.claude/
