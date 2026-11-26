@@ -2,6 +2,8 @@
 
 *the valley where rain waits for a sound*
 
+**[브라우저에서 보기](https://hobby-programmer-5000.github.io/stillrain/)**
+
 비가 제 음높이의 소리를 들어야만 떨어지는 고원 계곡에서, 가장 작은 견습 종지기 소녀가 계곡 끝으로 흘러가 버리는 비를 쫓아간다. 작은 종이 깨지자, 소녀는 자기 목소리로 하늘의 비를 내린다.
 
 93초짜리 애니메이션 단편이다. HTML 파일 **하나**(`index.html`)가 브라우저에서 실시간으로 돌아가고, 표 한 장(`film/events.js`)이 비, 소리, 풀잎, 사람들을 함께 움직인다.
@@ -16,7 +18,7 @@
 
 ## 보기
 
-`index.html`을 WebGL 2가 되는 데스크톱 브라우저(Chrome, Edge 권장)로 연다. 로딩이 끝나면 화면을 한 번 누르거나 `Space`를 눌러 시작한다. 소리가 함께 나온다.
+[GitHub Pages](https://hobby-programmer-5000.github.io/stillrain/)에서 바로 보거나, `index.html`을 받아 WebGL 2가 되는 데스크톱 브라우저(Chrome, Edge 권장)로 연다. 로딩이 끝나면 화면을 한 번 누르거나 `Space`를 눌러 시작한다. 소리가 함께 나온다.
 
 처음 열 때는 GPU가 셰이더 150개쯤을 하나씩 굽느라 15~20초쯤 걸린다. 브라우저가 구운 셰이더를 기억하기 때문에 두 번째부터는 5초 안팎이다. 걸리는 시간은 GPU에 따라 다르다.
 
