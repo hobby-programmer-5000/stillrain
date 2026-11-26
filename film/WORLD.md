@@ -24,7 +24,7 @@
 
 | 이름 | 종류 | 설명 |
 |---|---|---|
-| `sunOverride` | `null` 또는 `{dir:[x,y,z], col?:'#hex', k?:number}` | 장면이 해를 바꿀 때. `update`와 카메라 뒤 `afterCamera`에서 적용(같은 프레임에 반영). 끝나면 `null`로 돌려놓는다. `col`을 줄 때는 `k`도 함께 준다(`afterCamera`는 `k`가 없으면 세기 1을 쓴다) |
+| `sunOverride` | `null` 또는 `{dir:[x,y,z], col?:'#hex', k?:number}` | 장면이 해를 바꿀 때. 한 프레임만 유효(main.js가 매 프레임 `null`로 되돌림). `update`와 카메라 뒤 `afterCamera`에서 적용(같은 프레임에 반영). 끝나면 `null`로 돌려놓는다. `col`을 줄 때는 `k`도 함께 준다(`afterCamera`는 `k`가 없으면 세기 1을 쓴다) |
 | `fieldShadeK` | `null` 또는 0..1 | 빗방울 무리가 땅에 드리우는 얼룩빛 세기. `null`이면 시간대로(0.42, 69–72 s에 사라짐) |
 | `light(t)` | 함수 | 그 시각의 조명 키(해 방향·색, 하늘 색, 안개, 구름 색 …, 선형 RGB) |
 | `groundAt(x, z)` | 함수 | 그려지는 땅 높이. 분지와 테두리 40 m까지는 `FILM.valley.ground`와 같고, 90 m 밖은 산맥(그 사이는 섞임) |
@@ -116,8 +116,8 @@ node tools/shot.mjs --test sky --k 0,1,2 --cols 2 --w 800 --at 8 --out build/wor
 ## 예시
 
 ```js
-// 장면에서: 역광으로 해를 돌려놓고, 장면이 끝나면 되돌린다
-F.world.sunOverride = { dir: [-.8, .4, .45] };   // 다음 장면 update에서: F.world.sunOverride = null;
+// 장면의 update에서: 역광으로 해를 돌려놓는다. main.js가 매 프레임 null로 되돌리므로 장면은 매번 다시 설정한다
+F.world.sunOverride = { dir: [-.8, .4, .45] };
 
 // 다른 모듈의 천 조각을 M16 연쇄에 맞추기
 const k = F.world.snap(x, t) * .7 + F.world.blow(x, t) * .4;

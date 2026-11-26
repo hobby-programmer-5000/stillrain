@@ -460,15 +460,14 @@ void main(){ vec3 c = mix(uLine, vec3(1.0, 0.76, 0.56), uInkFlip); c = mix(c, fo
       c.r = mix(c.r, texture2D(tC, uv - dc * uCA * r2).r, 0.7); c.b = mix(c.b, texture2D(tC, uv + dc * uCA * r2).b, 0.7);
       // rainbow round the anti-solar point: 42 deg primary, faint 51 deg secondary; sky and far land only.
       // The pixel ray in world space comes from the camera matrix (uCW) and tan(fov / 2) (uTan); ang is its angle to -uSunDir.
-      // Bands: primary 40.6-43.2 deg, secondary 50.4-53.6 deg. Note: as written, spectrum(1 - p1) puts red on the inner
-      // edge of the primary and spectrum(p2) red on the outer edge of the secondary, the reverse of a real bow
-      // (red outside on the primary, inside on the secondary).
+      // Bands: primary 40.6-43.2 deg, secondary 50.4-53.6 deg. As in a real bow, the primary is blue inside and red outside
+      // (spectrum(p1)), and the fainter secondary is reversed, red inside (spectrum(1 - p2)).
       // It fades in with distance from 60 to 220 m, stays above the horizon, and scales with the brightness behind it.
       if (uBow > 0.0) { vec3 rd = normalize(mat3(uCW) * vec3((vUv * 2.0 - 1.0) * uTan, -1.0)); float ang = degrees(acos(clamp(dot(rd, -uSunDir), -1.0, 1.0)));
         float z = lin(texture2D(tDepth, vUv).x); float far = smoothstep(60.0, 220.0, z);
         float p1 = (ang - 40.6) / 2.6, p2 = (ang - 50.4) / 3.2; vec3 bow = vec3(0.0);
-        if (p1 > 0.0 && p1 < 1.0) bow += spectrum(1.0 - p1) * sin(p1 * 3.1416) * 0.6;
-        if (p2 > 0.0 && p2 < 1.0) bow += spectrum(p2) * sin(p2 * 3.1416) * 0.2;
+        if (p1 > 0.0 && p1 < 1.0) bow += spectrum(p1) * sin(p1 * 3.1416) * 0.6;
+        if (p2 > 0.0 && p2 < 1.0) bow += spectrum(1.0 - p2) * sin(p2 * 3.1416) * 0.2;
         c += bow * uBow * far * smoothstep(-0.05, 0.12, rd.y) * dot(c, vec3(0.3)) * 1.6; }
       // light leaks: two drifting warm and cool edge glows
       if (uLeak > 0.0) { float a = uTime * 0.07; vec2 p1 = vec2(-0.1 + 0.08 * sin(a), 0.85 + 0.1 * cos(a * 1.3)), p2 = vec2(1.08 + 0.05 * cos(a * .8), 0.2 + 0.12 * sin(a));
@@ -576,7 +575,7 @@ void main(){ vec3 c = mix(uLine, vec3(1.0, 0.76, 0.56), uInkFlip); c = mix(c, fo
   //   flash      0                mix toward white
   //   invert     0                mix toward the negative
   //   impact     0                impact frame: 1 inverted two-tone, 2 flat impactC fill with white edge lines
-  //   impactC    (last given)     hex colour of the impact 2 fill; it keeps the last value any look gave ('#E4572E' at first).
+  //   impactC    '#E4572E'        hex colour of the impact 2 fill (used as is: the fill is mixed in display space, after toSRGB)
   //                               THREE.Color stores it linear but it is mixed in after the sRGB step, so it shows darker than the hex
 
   //   rainbow    0                rainbow strength
@@ -629,7 +628,7 @@ void main(){ vec3 c = mix(uLine, vec3(1.0, 0.76, 0.56), uInkFlip); c = mix(c, fo
     // the seed comes from film time, so the same moment always shows the same grain. The paper tooth never moves.
     // (M18 in the bible describes a per-pixel mask rebuilt from depth; the engine takes one value per frame from the shot.)
     U.uLive.value = L.live ?? 1; const step = U.uLive.value > .5 ? 12 : 6; Fu.uSeed.value = (Math.floor(U.uTime.value * step) * 7.31) % 1;
-    Fu.uSpeedMode.value = L.speedMode || 0; Fu.uBow.value = L.rainbow || 0; Fu.uImpact.value = L.impact || 0; if (L.impactC) Fu.uImpactC.value.set(L.impactC); Fu.uLeak.value = L.leak || 0;
+    Fu.uSpeedMode.value = L.speedMode || 0; Fu.uBow.value = L.rainbow || 0; Fu.uImpact.value = L.impact || 0; Fu.uImpactC.value.set(L.impactC || '#E4572E').convertLinearToSRGB(); Fu.uLeak.value = L.leak || 0;
     Fu.uShock0.value.set(...(L.shock && L.shock[0] || [0, 0, 0, 0])); Fu.uShock1.value.set(...(L.shock && L.shock[1] || [0, 0, 0, 0]));
     // the camera's world matrix and half-frame tangents let the rainbow rebuild each pixel's ray in world space
     Fu.tDepth.value = rtScene.depthTexture; Fu.uNF.value.set(...nf); Fu.uCW.value.copy(cam.matrixWorld); const ty = Math.tan(fov / 2); Fu.uTan.value.set(ty * cam.aspect, ty);

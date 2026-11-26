@@ -1282,11 +1282,11 @@ vec3 mossPaint(vec2 p, float up){ float n = nz(p * 0.21), m = nzA(p * 0.6 + 3.7)
       drawMap();
     },
     // after the shot has placed the camera: a sun override set during the shot's update still lands on this frame
-    // (main.js runs world.update before the shot). Note: a colour without k is used at strength 1 here, not the key's sunK.
+    // (main.js runs world.update before the shot). A colour without k gets the key's strength (sunK), as in update().
     afterCamera(t) {
       const o = W.sunOverride; if (!o || !o.dir) return;
       U.uSunDir.value.set(o.dir[0], o.dir[1], o.dir[2]).normalize();
-      if (o.col) U.uSunCol.value.set(o.col).multiplyScalar(o.k ?? 1);
+      if (o.col) U.uSunCol.value.set(o.col).multiplyScalar(o.k ?? light(t).sunK);
       // move the shadow-casting light (E.sun) along the new direction, 3 shadow-frustum half widths from its target
       const sc = E.sun.shadow.camera, rr = sc.right; E.sun.position.copy(E.sun.target.position).addScaledVector(U.uSunDir.value, rr * 3); E.sun.shadow.needsUpdate = true;
       drawMap();   // the cloud shadows follow the sun

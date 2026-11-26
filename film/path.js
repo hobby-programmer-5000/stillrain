@@ -107,7 +107,7 @@ float gustK(float t){ return smoothstep(36.0, 37.2, t) * (1.0 - smoothstep(39.5,
     if (t < 46.1) { const y = keys(t, [[44.25, mast[1] + 5.4], [44.55, mast[1] + 5.4], [44.85, mast[1] + 8.4, 'snap'], [45.45, mast[1] + 8.4], [45.75, mast[1] + 11.4, 'snap'], [46.1, mast[1] + 12]]);
       o.pos = cling(y); o.state = 'climb'; o.yaw = yawTo(o.pos, mast); return o; }
     // leap from the mast top onto the first drop of the staircase (46.5)
-    if (t < 46.5) { const k = (t - 46.1) / .4; o.pos = arc(mastTop, topOf(hops[0], 46.5), k, 1.4); o.air = 1; o.state = 'leap'; o.yaw = yawTo(mastTop, topOf(hops[0], 46.5)); return o; }
+    if (t < 46.5) { const k = (t - 46.1) / .4, a = cling(mast[1] + 12); o.pos = arc(a, topOf(hops[0], 46.5), k, 1.4); o.air = 1; o.state = 'leap'; o.yaw = yawTo(a, topOf(hops[0], 46.5)); return o; }
     if (t < 54) { // the staircase: land at ts, squash, push off at ts + .4, fly to the next drop
       const i = Math.min(9, Math.floor((t - 46.5) / .75)), d = hops[i], nx = i < 9 ? hops[i + 1] : H, tau = t - d.ts;
       if (tau < .4) { const j = jelly(tau)[0]; o.pos = add(topOf(d, t), [0, d.r * j * .9, 0]); o.state = 'step'; o.on = i; }
@@ -118,7 +118,8 @@ float gustK(float t){ return smoothstep(36.0, 37.2, t) * (1.0 - smoothstep(39.5,
       o.yaw = keys(t, [[54, 2.2], [60, 2.2], [66, 2.0]]); return o; }
     // S13: the fall. She drifts across to the hush-cloth over 4 s while falling PELL_FALL_K times as far as the drops
     if (t < 73) { const tau = t - 69, a = topOf(H, 69), k = sm(0, 4, tau);
-      o.pos = [lerp(a[0], cloth.pos[0], k), a[1] - PELL_FALL_K * fallY(tau), lerp(a[2], cloth.pos[2], k)]; o.air = 1; o.state = 'fall'; o.yaw = yawTo(a, cloth.pos); return o; }
+      const land = cloth.pos[1] - .25 - (a[1] - PELL_FALL_K * fallY(4));   // the gap to the cloth at 73.0, closed over the last 1.5 s
+      o.pos = [lerp(a[0], cloth.pos[0], k), a[1] - PELL_FALL_K * fallY(tau) + land * sm(2.5, 4, tau), lerp(a[2], cloth.pos[2], k)]; o.air = 1; o.state = 'fall'; o.yaw = yawTo(a, cloth.pos); return o; }
     // S14: the bounce in the cloth (a damped sine)
     if (t < 75) { const sq = Math.exp(-(t - 73) * 5) * Math.sin((t - 73) * 18); o.pos = add(cloth.pos, [0, -.25 + .35 * sq, 0]); o.state = 'land'; o.yaw = 1.2; return o; }
     // S15-S16: on the ground beside the cloth, sitting, then standing (81)

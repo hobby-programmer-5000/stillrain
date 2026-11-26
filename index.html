@@ -654,15 +654,14 @@ void main(){ vec3 c = mix(uLine, vec3(1.0, 0.76, 0.56), uInkFlip); c = mix(c, fo
       c.r = mix(c.r, texture2D(tC, uv - dc * uCA * r2).r, 0.7); c.b = mix(c.b, texture2D(tC, uv + dc * uCA * r2).b, 0.7);
       // rainbow round the anti-solar point: 42 deg primary, faint 51 deg secondary; sky and far land only.
       // The pixel ray in world space comes from the camera matrix (uCW) and tan(fov / 2) (uTan); ang is its angle to -uSunDir.
-      // Bands: primary 40.6-43.2 deg, secondary 50.4-53.6 deg. Note: as written, spectrum(1 - p1) puts red on the inner
-      // edge of the primary and spectrum(p2) red on the outer edge of the secondary, the reverse of a real bow
-      // (red outside on the primary, inside on the secondary).
+      // Bands: primary 40.6-43.2 deg, secondary 50.4-53.6 deg. As in a real bow, the primary is blue inside and red outside
+      // (spectrum(p1)), and the fainter secondary is reversed, red inside (spectrum(1 - p2)).
       // It fades in with distance from 60 to 220 m, stays above the horizon, and scales with the brightness behind it.
       if (uBow > 0.0) { vec3 rd = normalize(mat3(uCW) * vec3((vUv * 2.0 - 1.0) * uTan, -1.0)); float ang = degrees(acos(clamp(dot(rd, -uSunDir), -1.0, 1.0)));
         float z = lin(texture2D(tDepth, vUv).x); float far = smoothstep(60.0, 220.0, z);
         float p1 = (ang - 40.6) / 2.6, p2 = (ang - 50.4) / 3.2; vec3 bow = vec3(0.0);
-        if (p1 > 0.0 && p1 < 1.0) bow += spectrum(1.0 - p1) * sin(p1 * 3.1416) * 0.6;
-        if (p2 > 0.0 && p2 < 1.0) bow += spectrum(p2) * sin(p2 * 3.1416) * 0.2;
+        if (p1 > 0.0 && p1 < 1.0) bow += spectrum(p1) * sin(p1 * 3.1416) * 0.6;
+        if (p2 > 0.0 && p2 < 1.0) bow += spectrum(1.0 - p2) * sin(p2 * 3.1416) * 0.2;
         c += bow * uBow * far * smoothstep(-0.05, 0.12, rd.y) * dot(c, vec3(0.3)) * 1.6; }
       // light leaks: two drifting warm and cool edge glows
       if (uLeak > 0.0) { float a = uTime * 0.07; vec2 p1 = vec2(-0.1 + 0.08 * sin(a), 0.85 + 0.1 * cos(a * 1.3)), p2 = vec2(1.08 + 0.05 * cos(a * .8), 0.2 + 0.12 * sin(a));
@@ -770,7 +769,7 @@ void main(){ vec3 c = mix(uLine, vec3(1.0, 0.76, 0.56), uInkFlip); c = mix(c, fo
   //   flash      0                mix toward white
   //   invert     0                mix toward the negative
   //   impact     0                impact frame: 1 inverted two-tone, 2 flat impactC fill with white edge lines
-  //   impactC    (last given)     hex colour of the impact 2 fill; it keeps the last value any look gave ('#E4572E' at first).
+  //   impactC    '#E4572E'        hex colour of the impact 2 fill (used as is: the fill is mixed in display space, after toSRGB)
   //                               THREE.Color stores it linear but it is mixed in after the sRGB step, so it shows darker than the hex
 
   //   rainbow    0                rainbow strength
@@ -823,7 +822,7 @@ void main(){ vec3 c = mix(uLine, vec3(1.0, 0.76, 0.56), uInkFlip); c = mix(c, fo
     // the seed comes from film time, so the same moment always shows the same grain. The paper tooth never moves.
     // (M18 in the bible describes a per-pixel mask rebuilt from depth; the engine takes one value per frame from the shot.)
     U.uLive.value = L.live ?? 1; const step = U.uLive.value > .5 ? 12 : 6; Fu.uSeed.value = (Math.floor(U.uTime.value * step) * 7.31) % 1;
-    Fu.uSpeedMode.value = L.speedMode || 0; Fu.uBow.value = L.rainbow || 0; Fu.uImpact.value = L.impact || 0; if (L.impactC) Fu.uImpactC.value.set(L.impactC); Fu.uLeak.value = L.leak || 0;
+    Fu.uSpeedMode.value = L.speedMode || 0; Fu.uBow.value = L.rainbow || 0; Fu.uImpact.value = L.impact || 0; Fu.uImpactC.value.set(L.impactC || '#E4572E').convertLinearToSRGB(); Fu.uLeak.value = L.leak || 0;
     Fu.uShock0.value.set(...(L.shock && L.shock[0] || [0, 0, 0, 0])); Fu.uShock1.value.set(...(L.shock && L.shock[1] || [0, 0, 0, 0]));
     // the camera's world matrix and half-frame tangents let the rainbow rebuild each pixel's ray in world space
     Fu.tDepth.value = rtScene.depthTexture; Fu.uNF.value.set(...nf); Fu.uCW.value.copy(cam.matrixWorld); const ty = Math.tan(fov / 2); Fu.uTan.value.set(ty * cam.aspect, ty);
@@ -1304,7 +1303,7 @@ float gustK(float t){ return smoothstep(36.0, 37.2, t) * (1.0 - smoothstep(39.5,
     if (t < 46.1) { const y = keys(t, [[44.25, mast[1] + 5.4], [44.55, mast[1] + 5.4], [44.85, mast[1] + 8.4, 'snap'], [45.45, mast[1] + 8.4], [45.75, mast[1] + 11.4, 'snap'], [46.1, mast[1] + 12]]);
       o.pos = cling(y); o.state = 'climb'; o.yaw = yawTo(o.pos, mast); return o; }
     // leap from the mast top onto the first drop of the staircase (46.5)
-    if (t < 46.5) { const k = (t - 46.1) / .4; o.pos = arc(mastTop, topOf(hops[0], 46.5), k, 1.4); o.air = 1; o.state = 'leap'; o.yaw = yawTo(mastTop, topOf(hops[0], 46.5)); return o; }
+    if (t < 46.5) { const k = (t - 46.1) / .4, a = cling(mast[1] + 12); o.pos = arc(a, topOf(hops[0], 46.5), k, 1.4); o.air = 1; o.state = 'leap'; o.yaw = yawTo(a, topOf(hops[0], 46.5)); return o; }
     if (t < 54) { // the staircase: land at ts, squash, push off at ts + .4, fly to the next drop
       const i = Math.min(9, Math.floor((t - 46.5) / .75)), d = hops[i], nx = i < 9 ? hops[i + 1] : H, tau = t - d.ts;
       if (tau < .4) { const j = jelly(tau)[0]; o.pos = add(topOf(d, t), [0, d.r * j * .9, 0]); o.state = 'step'; o.on = i; }
@@ -1315,7 +1314,8 @@ float gustK(float t){ return smoothstep(36.0, 37.2, t) * (1.0 - smoothstep(39.5,
       o.yaw = keys(t, [[54, 2.2], [60, 2.2], [66, 2.0]]); return o; }
     // S13: the fall. She drifts across to the hush-cloth over 4 s while falling PELL_FALL_K times as far as the drops
     if (t < 73) { const tau = t - 69, a = topOf(H, 69), k = sm(0, 4, tau);
-      o.pos = [lerp(a[0], cloth.pos[0], k), a[1] - PELL_FALL_K * fallY(tau), lerp(a[2], cloth.pos[2], k)]; o.air = 1; o.state = 'fall'; o.yaw = yawTo(a, cloth.pos); return o; }
+      const land = cloth.pos[1] - .25 - (a[1] - PELL_FALL_K * fallY(4));   // the gap to the cloth at 73.0, closed over the last 1.5 s
+      o.pos = [lerp(a[0], cloth.pos[0], k), a[1] - PELL_FALL_K * fallY(tau) + land * sm(2.5, 4, tau), lerp(a[2], cloth.pos[2], k)]; o.air = 1; o.state = 'fall'; o.yaw = yawTo(a, cloth.pos); return o; }
     // S14: the bounce in the cloth (a damped sine)
     if (t < 75) { const sq = Math.exp(-(t - 73) * 5) * Math.sin((t - 73) * 18); o.pos = add(cloth.pos, [0, -.25 + .35 * sq, 0]); o.state = 'land'; o.yaw = 1.2; return o; }
     // S15-S16: on the ground beside the cloth, sitting, then standing (81)
@@ -2849,11 +2849,11 @@ vec3 mossPaint(vec2 p, float up){ float n = nz(p * 0.21), m = nzA(p * 0.6 + 3.7)
       drawMap();
     },
     // after the shot has placed the camera: a sun override set during the shot's update still lands on this frame
-    // (main.js runs world.update before the shot). Note: a colour without k is used at strength 1 here, not the key's sunK.
+    // (main.js runs world.update before the shot). A colour without k gets the key's strength (sunK), as in update().
     afterCamera(t) {
       const o = W.sunOverride; if (!o || !o.dir) return;
       U.uSunDir.value.set(o.dir[0], o.dir[1], o.dir[2]).normalize();
-      if (o.col) U.uSunCol.value.set(o.col).multiplyScalar(o.k ?? 1);
+      if (o.col) U.uSunCol.value.set(o.col).multiplyScalar(o.k ?? light(t).sunK);
       // move the shadow-casting light (E.sun) along the new direction, 3 shadow-frustum half widths from its target
       const sc = E.sun.shadow.camera, rr = sc.right; E.sun.position.copy(E.sun.target.position).addScaledVector(U.uSunDir.value, rr * 3); E.sun.shadow.needsUpdate = true;
       drawMap();   // the cloud shadows follow the sun
@@ -9004,6 +9004,9 @@ window.FILM = window.FILM || {};
   function frame(t, dt, noRender) {
     const th = A.held(t);
     F.U.uTime.value = t; F.U.uHeld.value = th;
+    // shot state that world.js reads lasts one frame: a shot sets it again in its own update (s12, s15, s16 do), so seeking,
+    // restarting (R) or a still out of order never shows an earlier shot under a later shot's sun
+    if (F.world) { F.world.sunOverride = null; F.world.fieldShadeK = null; }
     for (const m of MODS) { const M = F[m]; if (M && M.update) { try { M.update(t, dt, cam); } catch (e) { if (!errOnce[m]) { errOnce[m] = 1; console.error(m + '.update: ' + (e && e.stack || e)); } } } }
     const sh = shotAt(t); let out = { cam: { pos: [0, 2, 10], look: [0, 1, 0], fov: 35 }, look: {} };
     if (override) out = override({ t, abs: t, held: th, habs: th, dt, cam }) || out;

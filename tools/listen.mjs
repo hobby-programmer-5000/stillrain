@@ -71,8 +71,9 @@ for (;;) { const ok = await ev('!!(window.FILM && FILM.ready)').catch(() => fals
 const loadMs = Date.now() - t0;
 if (pre) await ev(pre);
 // done(code): close Chrome, delete the profile and exit a moment later (the script itself does not stop at a done() call)
-const done = code => { ws.close(); ch.kill(); setTimeout(() => { try { rmSync(prof, { recursive: true, force: true }); } catch { } process.exit(code); }, 400); };
-if (!(await ev('!!(window.FILM && FILM.music)'))) { console.log(JSON.stringify({ error: 'FILM.music is missing', logs })); done(1); }
+// done() never resolves: `await done(n)` closes Chrome, cleans up and waits for process.exit, so nothing after it runs
+const done = code => { ws.close(); ch.kill(); setTimeout(() => { try { rmSync(prof, { recursive: true, force: true }); } catch { } process.exit(code); }, 400); return new Promise(() => { }); };
+if (!(await ev('!!(window.FILM && FILM.music)'))) { console.log(JSON.stringify({ error: 'FILM.music is missing', logs })); await done(1); }
 
 // ---- live mode: the real AudioContext (no gesture needed with the autoplay flag): start, read the clock, seek, pause
 // The script: start; 1.5 s later the clock should read about 1.5; seek to 66 and 1.2 s later it should read about 67.2;
@@ -88,7 +89,7 @@ if (flag('live')) {
   r.mute = await ev('[FILM.music.mute(), FILM.music.mute()]');
   await ev('FILM.music.seek(56.5)'); await sleep(1300); r.afterCrack = await ev('FILM.music.clock()');
   r.check = await ev('FILM.music.check()');
-  console.log(JSON.stringify({ live: r, loadMs, logs: logs.slice(0, 20) }, null, 1)); done(0);
+  console.log(JSON.stringify({ live: r, loadMs, logs: logs.slice(0, 20) }, null, 1)); await done(0);
 }
 
 // ---- render offline in the page, then pull the 16-bit PCM over in chunks

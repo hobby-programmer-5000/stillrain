@@ -114,6 +114,9 @@
   function frame(t, dt, noRender) {
     const th = A.held(t);
     F.U.uTime.value = t; F.U.uHeld.value = th;
+    // shot state that world.js reads lasts one frame: a shot sets it again in its own update (s12, s15, s16 do), so seeking,
+    // restarting (R) or a still out of order never shows an earlier shot under a later shot's sun
+    if (F.world) { F.world.sunOverride = null; F.world.fieldShadeK = null; }
     for (const m of MODS) { const M = F[m]; if (M && M.update) { try { M.update(t, dt, cam); } catch (e) { if (!errOnce[m]) { errOnce[m] = 1; console.error(m + '.update: ' + (e && e.stack || e)); } } } }
     const sh = shotAt(t); let out = { cam: { pos: [0, 2, 10], look: [0, 1, 0], fov: 35 }, look: {} };
     if (override) out = override({ t, abs: t, held: th, habs: th, dt, cam }) || out;
